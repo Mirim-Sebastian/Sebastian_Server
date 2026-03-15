@@ -10,7 +10,7 @@ app.use(cors());
 
 const ServerClient = new MongoClient(process.env.DB_URI);
 const dbName = "Sebastian";
-export async function RunDB(){
+export  async function RunDB(){
     try{
         await ServerClient.connect();
         console.log("MongoDB 연결 완료");
