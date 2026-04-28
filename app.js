@@ -21,7 +21,7 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-  console.log("✅WebSocket 연결됨");
+  console.log("WebSocket 연결됨");
 
   ws.on("message", (message) => {
     const data = JSON.parse(message.toString());
