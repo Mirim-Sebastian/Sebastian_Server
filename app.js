@@ -1,3 +1,5 @@
+
+require("dotenv").config();
 const express = require("express");
 const FishRouter = require("./routes/router");
 const dbConnect = require("./config/mongoDB");
@@ -8,7 +10,7 @@ const { WebSocketServer } = require("ws");
 const app = express();
 const PORT = 8000;
 
-// dbConnect();
+dbConnect();
 app.use(express.json());
 
 // API 라우터 연결
