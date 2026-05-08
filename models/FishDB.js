@@ -8,6 +8,10 @@ const FishSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  message: {
+    type: String,
+    required: true,
+  },
 });
 const FishContact = mongoose.model("FishDB", FishSchema);
 module.exports = FishContact;

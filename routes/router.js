@@ -15,10 +15,11 @@ router.route("/fish/count").get(async (req, res) => {
 //POST 물고기 생성
 router.route("/fish").post(async (req, res) => {
   try {
-    const { name, image } = req.body;
+    const { name, image, message } = req.body;
     const fish = new Fish({
       name,
       image,
+      message,
     });
     const savedFish = await fish.save(); //추가 사용자 저장하기
     res.status(201).json(savedFish);
