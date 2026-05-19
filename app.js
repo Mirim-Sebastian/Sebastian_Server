@@ -8,7 +8,7 @@ const { WebSocketServer } = require("ws");
 const app = express();
 const PORT = 8000;
 
-// dbConnect();
+dbConnect();
 app.use(express.json());
 
 // API 라우터 연결
