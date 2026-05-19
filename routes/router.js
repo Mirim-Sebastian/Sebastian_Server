@@ -40,4 +40,15 @@ router.route("/fish").get(async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+//Delete 물고기 삭제
+router.route("/fish/:id").delete(async (req, res) => {
+  try {
+    await Fish.findByIdAndDelete(req.params.id);
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
