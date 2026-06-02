@@ -8,7 +8,13 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-export const ServerClient = new MongoClient(process.env.DB_URI);
+const uri = process.env.DB_URI || process.env.DB_URL;
+if (!uri) {
+  console.error("DB 연결 실패: 환경변수 DB_URI 또는 DB_URL이 설정되어 있지 않습니다.");
+  process.exit(1);
+}
+
+export const ServerClient = new MongoClient(uri);
 export const dbName = "Sebastian";
 export async function RunDB() {
   try {
