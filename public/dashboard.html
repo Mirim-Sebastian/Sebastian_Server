@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sebastian Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --secondary: #764ba2;
+      --success: #48bb78;
+      --warning: #f6ad55;
+      --danger: #f56565;
+      --light: #f7fafc;
+      --dark: #2d3748;
+      --border: #e2e8f0;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: var(--dark);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-title h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .header-title .emoji {
+      font-size: 2.5rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .header-subtitle {
+      font-size: 0.95rem;
+      color: #718096;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--light);
+      padding: 10px 16px;
+      border-radius: 25px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: #4a5568;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .refresh-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .refresh-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .refresh-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .stat-label {
+      color: #718096;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-icon {
+      font-size: 1.8rem;
+      opacity: 0.8;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin: 8px 0;
+    }
+
+    .stat-change {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--success);
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-bottom: 10px;
+    }
+
+    /* Recent Fish Table */
+    .recent-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .recent-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--light);
+      border-bottom: 2px solid var(--border);
+    }
+
+    th {
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #718096;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      color: #4a5568;
+    }
+
+    tbody tr:hover {
+      background: var(--light);
+    }
+
+    .fish-name {
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .fish-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge-small {
+      background: #d6f5ff;
+      color: #0c5aa0;
+    }
+
+    .badge-medium {
+      background: #faf089;
+      color: #7c2d12;
+    }
+
+    .badge-large {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .time-cell {
+      color: #a0aec0;
+      font-size: 0.9rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #a0aec0;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      opacity: 0.5;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.9rem;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer span {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Loading State */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Error State */
+    .error-message {
+      background: #fed7d7;
+      color: #742a2a;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #f56565;
+      margin-bottom: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header-title h1 {
+        font-size: 1.5rem;
+      }
+
+      th, td {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="header-title">
+          <span class="emoji">🐠</span>
+          <div>
+            <h1>Sebastian</h1>
+            <p class="header-subtitle">Fish Analytics Dashboard</p>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-indicator">
+          <div class="live-dot"></div>
+          <span>실시간 업데이트</span>
+        </div>
+        <button class="refresh-btn" onclick="fetchStats()">🔄 새로고침</button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error" class="error-message" style="display: none;"></div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div>
+            <div class="stat-label">누적 사용자</div>
+          </div>
+          <span class="stat-icon">👥</span>
+        </div>
+        <div class="stat-value" id="totalUsers">-</div>
+        <div class="stat-change">
+          <span>↑ 생성된 물고기</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div>
+            <div class="stat-label">작은 물고기</div>
+          </div>
+          <span class="stat-icon">🐠</span>
+        </div>
+        <div class="stat-value" id="smallCount">-</div>
+        <div class="stat-change">
+          <span>Small Size</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div>
+            <div class="stat-label">중간 물고기</div>
+          </div>
+          <span class="stat-icon">🐟</span>
+        </div>
+        <div class="stat-value" id="mediumCount">-</div>
+        <div class="stat-change">
+          <span>Medium Size</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div>
+            <div class="stat-label">큰 물고기</div>
+          </div>
+          <span class="stat-icon">🦈</span>
+        </div>
+        <div class="stat-value" id="largeCount">-</div>
+        <div class="stat-change">
+          <span>Large Size</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📊 물고기 크기 분포</div>
+        <div class="chart-container">
+          <canvas id="sizeChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">📈 물고기 비율</div>
+        <div class="chart-container">
+          <canvas id="ratioChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Fish -->
+    <div class="recent-section">
+      <div class="recent-title">📋 최근 생성된 물고기</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>물고기 이름</th>
+              <th>크기</th>
+              <th>메시지</th>
+              <th>생성 시간</th>
+            </tr>
+          </thead>
+          <tbody id="fishTableBody">
+            <tr>
+              <td colspan="4" class="empty-state">
+                <div class="empty-state-icon">🎣</div>
+                <p>데이터를 불러오는 중...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      마지막 업데이트: <span id="updateTime">-</span>
+    </div>
+  </div>
+
+  <script>
+    let sizeChartInstance = null;
+    let ratioChartInstance = null;
+
+    async function fetchStats() {
+      const error = document.getElementById('error');
+      error.style.display = 'none';
+
+      try {
+        const response = await fetch('/admin/stats');
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        
+        const stats = await response.json();
+        updateDashboard(stats);
+      } catch (err) {
+        error.style.display = 'block';
+        error.textContent = `❌ 오류: ${err.message}`;
+      }
+    }
+
+    function updateDashboard(stats) {
+      // Update stat cards
+      document.getElementById('totalUsers').textContent = stats.totalUsers;
+      document.getElementById('smallCount').textContent = stats.fishBySize.small || 0;
+      document.getElementById('mediumCount').textContent = stats.fishBySize.medium || 0;
+      document.getElementById('largeCount').textContent = stats.fishBySize.large || 0;
+      document.getElementById('updateTime').textContent = new Date(stats.updatedAt).toLocaleString('ko-KR');
+
+      // Update charts
+      updateCharts(stats.fishBySize);
+
+      // Update table
+      updateTable(stats.recentFish);
+    }
+
+    function updateCharts(fishBySize) {
+      const sizes = ['small', 'medium', 'large'];
+      const counts = sizes.map(size => fishBySize[size] || 0);
+      const colors = ['#0c5aa0', '#7c2d12', '#742a2a'];
+
+      // Size Chart (Bar)
+      const sizeCtx = document.getElementById('sizeChart').getContext('2d');
+      if (sizeChartInstance) sizeChartInstance.destroy();
+      sizeChartInstance = new Chart(sizeCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Small', 'Medium', 'Large'],
+          datasets: [{
+            label: '물고기 개수',
+            data: counts,
+            backgroundColor: colors,
+            borderRadius: 8,
+            borderSkipped: false,
+            hoverBackgroundColor: colors.map(c => c + 'dd'),
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1,
+              },
+            },
+          },
+        },
+      });
+
+      // Ratio Chart (Doughnut)
+      const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+      if (ratioChartInstance) ratioChartInstance.destroy();
+      ratioChartInstance = new Chart(ratioCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Small', 'Medium', 'Large'],
+          datasets: [{
+            data: counts,
+            backgroundColor: colors,
+            borderColor: 'white',
+            borderWidth: 2,
+            hoverOffset: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                font: { size: 12 },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function updateTable(fishes) {
+      const tbody = document.getElementById('fishTableBody');
+      
+      if (!fishes || fishes.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="empty-state">
+              <div class="empty-state-icon">🎣</div>
+              <p>아직 물고기가 없습니다.</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = fishes.map(fish => `
+        <tr>
+          <td class="fish-name">${fish.name || '(이름 없음)'}</td>
+          <td>
+            <span class="fish-badge badge-${fish.size}">
+              ${fish.size.charAt(0).toUpperCase() + fish.size.slice(1)}
+            </span>
+          </td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${fish.message ? fish.message.substring(0, 30) + '...' : '-'}
+          </td>
+          <td class="time-cell">
+            ${new Date(fish.createdAt).toLocaleString('ko-KR')}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 페이지 로드 시 자동 실행
+    document.addEventListener('DOMContentLoaded', fetchStats);
+
+    // 3초마다 자동 새로고침
+    setInterval(fetchStats, 3000);
+  </script>
+</body>
+</html>
+

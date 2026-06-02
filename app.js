@@ -2,6 +2,7 @@ const express = require("express");
 const { createServer } = require("http");
 const { WebSocketServer } = require("ws");
 const dbConnect = require("./config/mongoDB");
+const path = require("path");
 
 const app = express();
 const server = createServer(app);
@@ -10,6 +11,9 @@ const PORT = 8000;
 
 dbConnect();
 app.use(express.json({ limit: "20mb" }));
+
+// 정적 파일 서빙 (대시보드)
+app.use(express.static(path.join(__dirname, "public")));
 
 const FishRouter = require("./routes/router")(wss);
 app.use("/", FishRouter);
