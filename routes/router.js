@@ -32,6 +32,16 @@ module.exports = (wss) => {
     }
   });
 
+  // POST 상어 소환 (관리자 전용)
+  router.route("/admin/shark").post((req, res) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({ type: "SPAWN_SHARK" }));
+      }
+    });
+    res.json({ message: "상어 소환!" });
+  });
+
   //Get 물고기 개수 조회(사용자 수 카운트)
   router.route("/fish/count").get(async (req, res) => {
     try {

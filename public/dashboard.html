@@ -127,6 +127,28 @@
       transform: translateY(0);
     }
 
+    .shark-btn {
+      background: linear-gradient(135deg, #f56565, #c53030);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(245, 101, 101, 0.35);
+    }
+    .shark-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(245, 101, 101, 0.5);
+    }
+    .shark-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     /* Stats Grid */
     .stats-grid {
       display: grid;
@@ -414,6 +436,7 @@
           <div class="live-dot"></div>
           <span>실시간 업데이트</span>
         </div>
+        <button class="shark-btn" onclick="spawnShark()" id="sharkBtn">🦈 상어 소환</button>
         <button class="refresh-btn" onclick="fetchStats()">🔄 새로고침</button>
       </div>
     </div>
@@ -525,6 +548,11 @@
   </div>
 
   <script>
+    // Live Server(5500)로 열면 백엔드가 8000번 포트에 있으므로 자동 감지
+    const API_BASE = window.location.port === '5500' || window.location.port === '3000'
+      ? 'http://localhost:8000'
+      : '';
+
     let sizeChartInstance = null;
     let ratioChartInstance = null;
 
@@ -533,7 +561,7 @@
       error.style.display = 'none';
 
       try {
-        const response = await fetch('/admin/stats');
+        const response = await fetch(`${API_BASE}/admin/stats`);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         
         const stats = await response.json();
@@ -661,6 +689,20 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    async function spawnShark() {
+      const btn = document.getElementById('sharkBtn');
+      btn.disabled = true;
+      btn.textContent = '🦈 소환 중...';
+      try {
+        const res = await fetch(`${API_BASE}/admin/shark`, { method: 'POST' });
+        if (!res.ok) throw new Error('실패');
+        btn.textContent = '✅ 소환 완료';
+      } catch {
+        btn.textContent = '❌ 오류';
+      }
+      setTimeout(() => { btn.disabled = false; btn.textContent = '🦈 상어 소환'; }, 2000);
     }
 
     // 페이지 로드 시 자동 실행
