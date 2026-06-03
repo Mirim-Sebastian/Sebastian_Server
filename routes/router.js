@@ -1,5 +1,22 @@
 const ex = require("express");
 const Fish = require("../models/FishDB");
+const { MongoClient } = require("mongodb");
+require("dotenv").config();
+
+const uri = process.env.DB_URI || process.env.DB_URL;
+const sebastianClient = new MongoClient(uri);
+let sebastianDb;
+
+// Sebastian DB 연결
+(async () => {
+  try {
+    await sebastianClient.connect();
+    sebastianDb = sebastianClient.db("Sebastian");
+    console.log("Sebastian DB 연결 완료");
+  } catch (error) {
+    console.error("Sebastian DB 연결 실패:", error);
+  }
+})();
 
 module.exports = (wss) => {
   const router = ex.Router();
@@ -32,7 +49,7 @@ module.exports = (wss) => {
     }
   });
 
-  //Get 물고기 개수 조회(사용자 수 카운트)
+  // Get 물고기 개수 조회(사용자 수 카운트)
   router.route("/fish/count").get(async (req, res) => {
     try {
       const userCount = await Fish.countDocuments();
@@ -42,13 +59,30 @@ module.exports = (wss) => {
     }
   });
 
-  //POST 물고기 생성 + WebSocket 브로드캐스트
+  // POST 물고기 생성 + WebSocket 브로드캐스트
   router.route("/fish").post(async (req, res) => {
     try {
       const { name, image, message, size } = req.body;
+
+      // 1. 기존대로 test.fishdbs에 저장 (mongoose)
       const fish = new Fish({ name, image, message, size });
       const savedFish = await fish.save();
 
+      // 2. Sebastian.fishs에도 동시 저장 (MongoClient)
+      if (sebastianDb) {
+        await sebastianDb.collection("fishs").insertOne({
+          name,
+          image,
+          message,
+          size,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        console.warn("Sebastian DB 미연결 상태 - Sebastian.fishs 저장 건너뜀");
+      }
+
+      // WebSocket 브로드캐스트
       wss.clients.forEach((client) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "NEW_FISH", data: savedFish }));
@@ -62,7 +96,7 @@ module.exports = (wss) => {
     }
   });
 
-  //Get 물고기 목록 조회
+  // Get 물고기 목록 조회
   router.route("/fish").get(async (req, res) => {
     try {
       const fishes = await Fish.find();
@@ -73,11 +107,11 @@ module.exports = (wss) => {
     }
   });
 
-  //Delete 물고기 삭제 + WebSocket 브로드캐스트
+  // Delete 물고기 삭제 + WebSocket 브로드캐스트
   router.route("/fish/:id").delete(async (req, res) => {
     try {
       const deletedFish = await Fish.findByIdAndDelete(req.params.id);
-      
+
       if (!deletedFish) {
         return res.status(404).json({ message: "물고기를 찾을 수 없습니다." });
       }
@@ -85,7 +119,9 @@ module.exports = (wss) => {
       // 삭제된 물고기를 모든 클라이언트에 알림
       wss.clients.forEach((client) => {
         if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "FISH_DELETED", data: { id: req.params.id } }));
+          client.send(
+            JSON.stringify({ type: "FISH_DELETED", data: { id: req.params.id } })
+          );
         }
       });
 
