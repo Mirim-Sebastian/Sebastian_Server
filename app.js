@@ -1,6 +1,7 @@
 const express = require("express");
 const { createServer } = require("http");
 const { WebSocketServer } = require("ws");
+const cors = require("cors");
 const dbConnect = require("./config/mongoDB");
 const path = require("path");
 
@@ -10,6 +11,7 @@ const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 8000;
 
 dbConnect();
+app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "20mb" }));
 
 // 정적 파일 서빙 (대시보드)
