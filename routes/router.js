@@ -50,6 +50,32 @@ module.exports = (wss) => {
     }
   });
 
+  router.route("/admin/shark").post((req, res) => {
+    const payload = JSON.stringify({
+      type: "SPAWN_SHARK",
+      allowProtectedTargets: true,
+      deleteTargets: true,
+    });
+    let sent = 0;
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(payload);
+        sent += 1;
+      }
+    });
+
+    if (sent === 0) {
+      return res.status(409).json({
+        ok: false,
+        sent,
+        message: "연결된 바다 화면이 없습니다.",
+      });
+    }
+
+    res.json({ ok: true, sent });
+  });
+
   // Get 물고기 개수 조회(사용자 수 카운트)
   router.route("/fish/count").get(async (req, res) => {
     try {
