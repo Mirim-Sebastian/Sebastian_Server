@@ -6,6 +6,7 @@ require("dotenv").config();
 const uri = process.env.DB_URI || process.env.DB_URL;
 const sebastianClient = new MongoClient(uri);
 let sebastianDb;
+const MAX_FISH_LIMIT = 500;
 
 // Sebastian DB 연결
 (async () => {
@@ -68,28 +69,31 @@ module.exports = (wss) => {
       const fish = new Fish({ name, image, message, size });
       const savedFish = await fish.save();
 
-      // 2. Sebastian.fishs에도 동시 저장 (MongoClient)
+      // WebSocket 브로드캐스트
+      const payload = JSON.stringify({ type: "NEW_FISH", data: savedFish });
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(payload);
+        }
+      });
+
+      res.status(201).json(savedFish);
+
+      // 2. Sebastian.fishs에도 동시 저장 (MongoClient). 보조 저장은 응답을 막지 않는다.
       if (sebastianDb) {
-        await sebastianDb.collection("fishs").insertOne({
+        sebastianDb.collection("fishs").insertOne({
           name,
           image,
           message,
           size,
           createdAt: new Date(),
           updatedAt: new Date(),
+        }).catch((error) => {
+          console.error("Sebastian.fishs 저장 실패:", error);
         });
       } else {
         console.warn("Sebastian DB 미연결 상태 - Sebastian.fishs 저장 건너뜀");
       }
-
-      // WebSocket 브로드캐스트
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "NEW_FISH", data: savedFish }));
-        }
-      });
-
-      res.status(201).json(savedFish);
     } catch (error) {
       console.error(error);
       res.status(400).json({ message: error.message });
@@ -99,8 +103,15 @@ module.exports = (wss) => {
   // Get 물고기 목록 조회
   router.route("/fish").get(async (req, res) => {
     try {
-      const fishes = await Fish.find();
-      res.json(fishes);
+      const requestedLimit = Number.parseInt(req.query.limit, 10);
+      const limit = Number.isFinite(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), MAX_FISH_LIMIT)
+        : 250;
+      const fishes = await Fish.find()
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+      res.json(fishes.reverse());
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: error.message });
@@ -117,11 +128,10 @@ module.exports = (wss) => {
       }
 
       // 삭제된 물고기를 모든 클라이언트에 알림
+      const payload = JSON.stringify({ type: "FISH_DELETED", data: { id: req.params.id } });
       wss.clients.forEach((client) => {
         if (client.readyState === 1) {
-          client.send(
-            JSON.stringify({ type: "FISH_DELETED", data: { id: req.params.id } })
-          );
+          client.send(payload);
         }
       });
 

@@ -14,5 +14,7 @@ const FishSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+FishSchema.index({ createdAt: -1 });
+
 const FishContact = mongoose.model("FishDB", FishSchema);
 module.exports = FishContact;
