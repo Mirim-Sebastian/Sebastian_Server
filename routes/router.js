@@ -50,6 +50,17 @@ module.exports = (wss) => {
     }
   });
 
+  router.route("/admin/fishes").get(async (req, res) => {
+    try {
+      const fishes = await Fish.find()
+        .sort({ createdAt: -1 })
+        .lean();
+      res.json(fishes);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   router.route("/admin/shark").post((req, res) => {
     const payload = JSON.stringify({
       type: "SPAWN_SHARK",
